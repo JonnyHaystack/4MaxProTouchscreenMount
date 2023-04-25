@@ -1,5 +1,7 @@
 # %%
 import math
+
+import copy
 from build123d import *
 from ocp_vscode import show, set_port, set_defaults
 
@@ -14,8 +16,9 @@ pcb_thickness = 1.6
 pcb_screw_x_spacing = 94.8
 pcb_screw_y_spacing = 53
 pcb_standoff_height = 6.8
-pcb_standoff_od = 5.5
-pcb_standoff_id = 2.3
+pcb_screw_hole_diameter = 2.8
+pcb_standoff_od = 6
+pcb_standoff_id = 3.5
 
 lcd_height = 55.5
 lcd_width = 84.6
@@ -33,7 +36,7 @@ printer_screw_y_spacing_3d = 28.5
 printer_screw_z_spacing = 28
 printer_screw_y_spacing = printer_screw_z_spacing / math.sin(math.radians(printer_mount_angle))
 printer_screw_hole_od = 10
-printer_screw_hole_id = 3.2
+printer_screw_hole_id = 3.6
 printer_screw_hole_length_including_counterbore = 10.5
 printer_screw_hole_counterbore_depth = 6.1
 printer_screw_hole_counterbore_diameter = 6.8
@@ -104,19 +107,24 @@ with BuildPart() as plate:
             Circle(printer_screw_hole_counterbore_diameter / 2)
         extrude(amount=100, mode=Mode.SUBTRACT)
     
-    # PCB standoffs
-    with BuildSketch(bottom_face) as pcb_standoff_sk:
-        with GridLocations(pcb_screw_x_spacing, pcb_screw_y_spacing, 2, 2):
-            Circle(pcb_standoff_od / 2)
-            Circle(pcb_standoff_id / 2, mode=Mode.SUBTRACT)
+    # PCB screw holes
+    with BuildSketch(top_face) as pcb_screw_holes_sk:
+        with GridLocations(pcb_screw_x_spacing, pcb_screw_y_spacing, 2, 2) as screw_holes:
+            Circle(pcb_screw_hole_diameter / 2)
+    extrude(dir=(0, 0, -1), until=Until.LAST, mode=Mode.SUBTRACT)
+
+with BuildPart() as spacer:
+    with BuildSketch() as spacer_sk:
+        Circle(radius=pcb_standoff_od / 2)
+        Circle(radius=pcb_standoff_id / 2, mode=Mode.SUBTRACT)
     extrude(amount=pcb_standoff_height)
 
 show(
     plate,
-    # test,
-    # printer_screw_sk,
-    colors=["gold", "cyan", "magenta", "lime"],
+    # colors=["gold", "cyan", "magenta", "lime"],
     transparent=True,
     reset_camera=False,
-    # alphas=[0.75, 0.75, 0.75],
 )
+
+plate.part.export_step("4Max_Pro_Touchscreen_Mount.step")
+spacer.part.export_step("4Max_Pro_Touchscreen_Spacer.step")
