@@ -40,28 +40,35 @@ centre_cutout_corner_radius = 2
 edge_cutout_width = 16.5
 edge_cutout_height = 22
 
-# Measurements for the points of attachment to the printer
-printer_mount_angle = 45
-printer_screw_x_spacing = 116
-printer_screw_y_spacing_3d = 28.5
-printer_screw_z_spacing = 28
-printer_screw_y_spacing = printer_screw_z_spacing / math.sin(math.radians(printer_mount_angle))
-printer_screw_hole_od = 10
-printer_screw_hole_id = 3.6
-printer_screw_hole_length_including_counterbore = 10.5
-printer_screw_hole_counterbore_depth = 6.1
-printer_screw_hole_counterbore_diameter = 6.8
-printer_screw_hole_protrusion_offset = math.tan(math.radians(printer_mount_angle)) * 7.2 / 2
-
-padding = 25
-overall_width = printer_screw_x_spacing + padding / 2
-overall_height = printer_screw_y_spacing + padding
-
 
 class TouchscreenMount(Compound):
-    def __init__(self):
-        pcb_screw_locations, self.plate_part = self.plate()
-        self.spacer_part = self.spacer()
+    def __init__(self, pcb_screw_x_spacing, pcb_screw_y_spacing):
+        # Measurements for the points of attachment to the printer
+        self.printer_mount_angle = 45
+        self.printer_screw_x_spacing = 116
+        printer_screw_z_spacing = 28
+        self.printer_screw_y_spacing = printer_screw_z_spacing / math.sin(
+            math.radians(self.printer_mount_angle)
+        )
+        self.printer_screw_hole_od = 10
+        self.printer_screw_hole_id = 3.6
+        self.printer_screw_hole_length = 10.5
+        self.printer_screw_hole_counterbore_depth = 6.1
+        self.printer_screw_hole_counterbore_diameter = 6.8
+        self.printer_screw_hole_protrusion_offset = math.tan(
+            math.radians(self.printer_mount_angle)
+        ) * 7.2 / 2
+
+        padding = 25
+        self.overall_width = self.printer_screw_x_spacing + padding / 2
+        self.overall_height = self.printer_screw_y_spacing + padding
+
+        self.plate_part, pcb_screw_locations = self.plate(
+            pcb_screw_x_spacing,
+            pcb_screw_y_spacing,
+        )
+        self.spacer_part: Part = self.spacer()
+        self.pcb_part: Part = self.pcb()
 
         spacers = []
         for idx, loc in enumerate(pcb_screw_locations):
@@ -76,18 +83,16 @@ class TouchscreenMount(Compound):
             screw_hole_joint.connect_to(spacer_joint)
             spacers.append(spacer_copy)
     
-        self.plate_part.label = "Plate"
-    
         super().__init__(
             label="4Max Pro Touchscreen Mount",
-            children=[self.plate_part, *spacers],
+            children=[self.plate_part, self.pcb_part, *spacers],
         )
 
-    def plate(self):
+    def plate(self, pcb_screw_x_spacing, pcb_screw_y_spacing) -> tuple[Part, list[Location]]:
         with BuildPart() as plate:
             # Base shape of mounting plate
             with BuildSketch() as base_sk:
-                Rectangle(overall_width, overall_height)
+                Rectangle(self.overall_width, self.overall_height)
 
                 # Edge cutouts
                 with Locations(base_sk.edges().group_by(Axis.X)[-1][0] @ 0.5):
@@ -115,27 +120,32 @@ class TouchscreenMount(Compound):
 
             # Screw posts for mounting to printer
             with Locations(top_face):
-                locs = GridLocations(printer_screw_x_spacing, printer_screw_y_spacing, 2, 2)
+                locs = GridLocations(
+                    self.printer_screw_x_spacing,
+                    self.printer_screw_y_spacing,
+                    2,
+                    2,
+                )
             for l in locs:
                 pln1 = Plane(l).rotated(
-                    (printer_mount_angle + 180, 0, 0)
-                ).offset(-printer_screw_hole_protrusion_offset)
+                    (self.printer_mount_angle + 180, 0, 0)
+                ).offset(-self.printer_screw_hole_protrusion_offset)
                 # Protruding part of screw post
                 with BuildSketch(pln1) as screw_post_sk:
-                    Circle(printer_screw_hole_od / 2)
+                    Circle(self.printer_screw_hole_od / 2)
                 screw_post = extrude(until=Until.NEXT)
 
                 # Screw hole
                 with BuildSketch(pln1) as screw_hole_sk:
-                    Circle(printer_screw_hole_id / 2)
+                    Circle(self.printer_screw_hole_id / 2)
                 screw_hole = extrude(until=Until.LAST, mode=Mode.SUBTRACT)
 
                 # Counterbore for printer screw hole
                 pln2 = pln1.offset(
-                    printer_screw_hole_length_including_counterbore - printer_screw_hole_counterbore_depth
+                    self.printer_screw_hole_length - self.printer_screw_hole_counterbore_depth
                 )
                 with BuildSketch(pln2) as counterbore_sk:
-                    Circle(printer_screw_hole_counterbore_diameter / 2)
+                    Circle(self.printer_screw_hole_counterbore_diameter / 2)
                 extrude(amount=100, mode=Mode.SUBTRACT)
             
             # PCB screw holes
@@ -145,9 +155,10 @@ class TouchscreenMount(Compound):
                     pcb_screw_locations = screw_holes.locations
             extrude(dir=(0, 0, 1), until=Until.LAST, mode=Mode.SUBTRACT)
 
-        return pcb_screw_locations, plate.part
+        plate.part.label = "Plate"
+        return plate.part, pcb_screw_locations
 
-    def spacer(self):
+    def spacer(self) -> Part:
         # PCB spacers/standoffs
         with BuildPart() as spacer:
             with BuildSketch() as spacer_sk:
@@ -156,9 +167,21 @@ class TouchscreenMount(Compound):
             extrude(amount=pcb_standoff_height)
 
         return spacer.part
+    
+    def pcb(self) -> Part:
+        with BuildPart() as pcb:
+            with BuildSketch() as pcb_sk:
+                RectangleRounded(pcb_width, pcb_height, radius=2)
+            extrude(amount=pcb_thickness)
+
+        pcb.part.label = "PCB"
+        return pcb.part
 
 
-assembly = TouchscreenMount()
+assembly = TouchscreenMount(
+    pcb_screw_x_spacing,
+    pcb_screw_y_spacing,
+)
 
 show(
     assembly,
