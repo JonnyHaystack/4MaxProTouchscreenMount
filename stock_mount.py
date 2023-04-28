@@ -27,9 +27,20 @@ lcd_thickness = 3.8
 lcd_screw_x_spacing = 96
 lcd_screw_y_spacing = 53
 
+# Measurements for the plate itself
 plate_height = 59
 plate_thickness = 3
 plate_corner_radius = 3
+
+# Measurements for cutouts in the plate
+centre_cutout_width = 77.75
+centre_cutout_height = 34.8
+centre_cutout_corner_radius = 2
+
+edge_cutout_width = 16.5
+edge_cutout_height = 22
+
+# Measurements for the points of attachment to the printer
 printer_mount_angle = 45
 printer_screw_x_spacing = 116
 printer_screw_y_spacing_3d = 28.5
@@ -42,110 +53,114 @@ printer_screw_hole_counterbore_depth = 6.1
 printer_screw_hole_counterbore_diameter = 6.8
 printer_screw_hole_protrusion_offset = math.tan(math.radians(printer_mount_angle)) * 7.2 / 2
 
-centre_cutout_width = 77.75
-centre_cutout_height = 34.8
-centre_cutout_corner_radius = 2
-
-edge_cutout_width = 16.5
-edge_cutout_height = 22
-
 padding = 25
 overall_width = printer_screw_x_spacing + padding / 2
 overall_height = printer_screw_y_spacing + padding
 
-with BuildPart() as plate:
-    # Base shape of mounting plate
-    with BuildSketch() as base_sk:
-        Rectangle(overall_width, overall_height)
 
-        # Edge cutouts
-        with Locations(base_sk.edges().group_by(Axis.X)[-1][0] @ 0.5):
-            edge_cutout = Rectangle(
-                edge_cutout_width,
-                edge_cutout_height,
-                align=(Align.MAX, Align.CENTER),
-                mode=Mode.SUBTRACT,
-            )
-            mirror(edge_cutout.faces(), about=Plane.YZ, mode=Mode.SUBTRACT)
+class TouchscreenMount(Compound):
+    def __init__(self, pcb_screw_x_spacing, pcb_screw_y_spacing):
+        with BuildPart() as plate:
+            # Base shape of mounting plate
+            with BuildSketch() as base_sk:
+                Rectangle(overall_width, overall_height)
 
-        fillet(base_sk.vertices(), radius=plate_corner_radius)
+                # Edge cutouts
+                with Locations(base_sk.edges().group_by(Axis.X)[-1][0] @ 0.5):
+                    edge_cutout = Rectangle(
+                        edge_cutout_width,
+                        edge_cutout_height,
+                        align=(Align.MAX, Align.CENTER),
+                        mode=Mode.SUBTRACT,
+                    )
+                    mirror(edge_cutout.faces(), about=Plane.YZ, mode=Mode.SUBTRACT)
 
-        # Centre cutout
-        RectangleRounded(
-            centre_cutout_width,
-            centre_cutout_height,
-            centre_cutout_corner_radius,
-            mode=Mode.SUBTRACT,
-        )
-    extrude(amount=plate_thickness)
+                fillet(base_sk.vertices(), radius=plate_corner_radius)
 
-    top_face = plate.part.faces().sort_by(Axis.Z).last
-    bottom_face = plate.part.faces().sort_by(Axis.Z).first
+                # Centre cutout
+                RectangleRounded(
+                    centre_cutout_width,
+                    centre_cutout_height,
+                    centre_cutout_corner_radius,
+                    mode=Mode.SUBTRACT,
+                )
+            extrude(amount=plate_thickness)
 
-    # Screw posts for mounting to printer
-    with Locations(top_face):
-        locs = GridLocations(printer_screw_x_spacing, printer_screw_y_spacing, 2, 2)
-    for l in locs:
-        pln1 = Plane(l).rotated(
-            (printer_mount_angle + 180, 0, 0)
-        ).offset(-printer_screw_hole_protrusion_offset)
-        # Protruding part of screw post
-        with BuildSketch(pln1) as screw_post_sk:
-            Circle(printer_screw_hole_od / 2)
-        screw_post = extrude(until=Until.NEXT)
+            top_face = plate.part.faces().sort_by(Axis.Z).last
+            bottom_face = plate.part.faces().sort_by(Axis.Z).first
 
-        # Screw hole
-        with BuildSketch(pln1) as screw_hole_sk:
-            Circle(printer_screw_hole_id / 2)
-        screw_hole = extrude(until=Until.LAST, mode=Mode.SUBTRACT)
+            # Screw posts for mounting to printer
+            with Locations(top_face):
+                locs = GridLocations(printer_screw_x_spacing, printer_screw_y_spacing, 2, 2)
+            for l in locs:
+                pln1 = Plane(l).rotated(
+                    (printer_mount_angle + 180, 0, 0)
+                ).offset(-printer_screw_hole_protrusion_offset)
+                # Protruding part of screw post
+                with BuildSketch(pln1) as screw_post_sk:
+                    Circle(printer_screw_hole_od / 2)
+                screw_post = extrude(until=Until.NEXT)
 
-        # Counterbore for printer screw hole
-        pln2 = pln1.offset(
-            printer_screw_hole_length_including_counterbore - printer_screw_hole_counterbore_depth
-        )
-        with BuildSketch(pln2) as counterbore_sk:
-            Circle(printer_screw_hole_counterbore_diameter / 2)
-        extrude(amount=100, mode=Mode.SUBTRACT)
+                # Screw hole
+                with BuildSketch(pln1) as screw_hole_sk:
+                    Circle(printer_screw_hole_id / 2)
+                screw_hole = extrude(until=Until.LAST, mode=Mode.SUBTRACT)
+
+                # Counterbore for printer screw hole
+                pln2 = pln1.offset(
+                    printer_screw_hole_length_including_counterbore - printer_screw_hole_counterbore_depth
+                )
+                with BuildSketch(pln2) as counterbore_sk:
+                    Circle(printer_screw_hole_counterbore_diameter / 2)
+                extrude(amount=100, mode=Mode.SUBTRACT)
+            
+            # PCB screw holes
+            with BuildSketch(bottom_face) as pcb_screw_holes_sk:
+                with GridLocations(pcb_screw_x_spacing, pcb_screw_y_spacing, 2, 2) as screw_holes:
+                    Circle(pcb_screw_hole_diameter / 2)
+                    pcb_screw_locations = screw_holes.locations
+            extrude(dir=(0, 0, 1), until=Until.LAST, mode=Mode.SUBTRACT)
+
+        # PCB spacers/standoffs
+        with BuildPart() as spacer:
+            with BuildSketch() as spacer_sk:
+                Circle(radius=pcb_standoff_od / 2)
+                Circle(radius=pcb_standoff_id / 2, mode=Mode.SUBTRACT)
+            extrude(amount=pcb_standoff_height)
+
+        spacers = []
+        for idx, loc in enumerate(pcb_screw_locations):
+            spacer_copy = copy.copy(spacer.part)
+            spacer_copy.label = f"PCB Spacer {idx}"
+            # Place rigid joint on plate
+            screw_hole_joint = RigidJoint(f"screw_hole{idx}", plate.part, loc)
+            # Place rigid joint on spacer
+            spacer_joint = RigidJoint("spacer", spacer_copy)
+            # Connect screw hole joint to spacer joint, which automatically positions the spacer over the
+            # screw hole
+            screw_hole_joint.connect_to(spacer_joint)
+            spacers.append(spacer_copy)
     
-    # PCB screw holes
-    with BuildSketch(bottom_face) as pcb_screw_holes_sk:
-        with GridLocations(pcb_screw_x_spacing, pcb_screw_y_spacing, 2, 2) as screw_holes:
-            Circle(pcb_screw_hole_diameter / 2)
-            pcb_screw_locations = screw_holes.locations
-    extrude(dir=(0, 0, 1), until=Until.LAST, mode=Mode.SUBTRACT)
+        plate.part.label = "Plate"
+    
+        self.plate = plate.part
+        self.spacer = spacer.part
+    
+        super().__init__(
+            label="4Max Pro Touchscreen Mount",
+            children=[plate.part, *spacers],
+        )
 
-# PCB spacers/standoffs
-with BuildPart() as spacer:
-    with BuildSketch() as spacer_sk:
-        Circle(radius=pcb_standoff_od / 2)
-        Circle(radius=pcb_standoff_id / 2, mode=Mode.SUBTRACT)
-    extrude(amount=pcb_standoff_height)
 
-spacers = []
-for idx, loc in enumerate(pcb_screw_locations):
-    spacer_copy = copy.copy(spacer.part)
-    spacer_copy.label = f"PCB Spacer {idx}"
-    # Place rigid joint on plate
-    screw_hole_joint = RigidJoint(f"screw_hole{idx}", plate.part, loc)
-    # Place rigid joint on spacer
-    spacer_joint = RigidJoint("spacer", spacer_copy)
-    # Connect screw hole joint to spacer joint, which automatically positions the spacer over the
-    # screw hole
-    screw_hole_joint.connect_to(spacer_joint)
-    spacers.append(spacer_copy)
-
-assembly = Compound(
-    label="4Max Pro Touchscreen Mount",
-    children=[plate.part, *spacers]
-)
+assembly = TouchscreenMount()
 
 show(
     assembly,
-    # render_joints=True,
+    render_joints=True,
     transparent=True,
     reset_camera=False,
 )
 
 assembly.export_step("4Max_Pro_Touchscreen_Mount.step")
-plate.part.export_stl("4Max_Pro_Touchscreen_Mount_Plate.stl")
-spacer.part.export_stl("4Max_Pro_Touchscreen_Mount_Spacer.stl")
+assembly.plate.export_stl("4Max_Pro_Touchscreen_Mount_Plate.stl")
+assembly.spacer.export_stl("4Max_Pro_Touchscreen_Mount_Spacer.stl")
