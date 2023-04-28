@@ -59,7 +59,31 @@ overall_height = printer_screw_y_spacing + padding
 
 
 class TouchscreenMount(Compound):
-    def __init__(self, pcb_screw_x_spacing, pcb_screw_y_spacing):
+    def __init__(self):
+        self.plate_part = self.plate()
+        self.spacer_part = self.spacer()
+
+        spacers = []
+        for idx, loc in enumerate(self.pcb_screw_locations):
+            spacer_copy = copy.copy(self.spacer_part)
+            spacer_copy.label = f"PCB Spacer {idx}"
+            # Place rigid joint on plate
+            screw_hole_joint = RigidJoint(f"screw_hole{idx}", self.plate_part, loc)
+            # Place rigid joint on spacer
+            spacer_joint = RigidJoint("spacer", spacer_copy)
+            # Connect screw hole joint to spacer joint, which automatically positions the spacer
+            # over the screw hole
+            screw_hole_joint.connect_to(spacer_joint)
+            spacers.append(spacer_copy)
+    
+        self.plate_part.label = "Plate"
+    
+        super().__init__(
+            label="4Max Pro Touchscreen Mount",
+            children=[self.plate_part, *spacers],
+        )
+
+    def plate(self):
         with BuildPart() as plate:
             # Base shape of mounting plate
             with BuildSketch() as base_sk:
@@ -118,9 +142,12 @@ class TouchscreenMount(Compound):
             with BuildSketch(bottom_face) as pcb_screw_holes_sk:
                 with GridLocations(pcb_screw_x_spacing, pcb_screw_y_spacing, 2, 2) as screw_holes:
                     Circle(pcb_screw_hole_diameter / 2)
-                    pcb_screw_locations = screw_holes.locations
+                    self.pcb_screw_locations = screw_holes.locations
             extrude(dir=(0, 0, 1), until=Until.LAST, mode=Mode.SUBTRACT)
 
+        return plate.part
+
+    def spacer(self):
         # PCB spacers/standoffs
         with BuildPart() as spacer:
             with BuildSketch() as spacer_sk:
@@ -128,28 +155,7 @@ class TouchscreenMount(Compound):
                 Circle(radius=pcb_standoff_id / 2, mode=Mode.SUBTRACT)
             extrude(amount=pcb_standoff_height)
 
-        spacers = []
-        for idx, loc in enumerate(pcb_screw_locations):
-            spacer_copy = copy.copy(spacer.part)
-            spacer_copy.label = f"PCB Spacer {idx}"
-            # Place rigid joint on plate
-            screw_hole_joint = RigidJoint(f"screw_hole{idx}", plate.part, loc)
-            # Place rigid joint on spacer
-            spacer_joint = RigidJoint("spacer", spacer_copy)
-            # Connect screw hole joint to spacer joint, which automatically positions the spacer over the
-            # screw hole
-            screw_hole_joint.connect_to(spacer_joint)
-            spacers.append(spacer_copy)
-    
-        plate.part.label = "Plate"
-    
-        self.plate = plate.part
-        self.spacer = spacer.part
-    
-        super().__init__(
-            label="4Max Pro Touchscreen Mount",
-            children=[plate.part, *spacers],
-        )
+        return spacer.part
 
 
 assembly = TouchscreenMount()
@@ -162,5 +168,5 @@ show(
 )
 
 assembly.export_step("4Max_Pro_Touchscreen_Mount.step")
-assembly.plate.export_stl("4Max_Pro_Touchscreen_Mount_Plate.stl")
-assembly.spacer.export_stl("4Max_Pro_Touchscreen_Mount_Spacer.stl")
+assembly.plate_part.export_stl("4Max_Pro_Touchscreen_Mount_Plate.stl")
+assembly.spacer_part.export_stl("4Max_Pro_Touchscreen_Mount_Spacer.stl")
