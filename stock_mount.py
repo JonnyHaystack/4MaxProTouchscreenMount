@@ -60,11 +60,11 @@ overall_height = printer_screw_y_spacing + padding
 
 class TouchscreenMount(Compound):
     def __init__(self):
-        self.plate_part = self.plate()
+        pcb_screw_locations, self.plate_part = self.plate()
         self.spacer_part = self.spacer()
 
         spacers = []
-        for idx, loc in enumerate(self.pcb_screw_locations):
+        for idx, loc in enumerate(pcb_screw_locations):
             spacer_copy = copy.copy(self.spacer_part)
             spacer_copy.label = f"PCB Spacer {idx}"
             # Place rigid joint on plate
@@ -142,10 +142,10 @@ class TouchscreenMount(Compound):
             with BuildSketch(bottom_face) as pcb_screw_holes_sk:
                 with GridLocations(pcb_screw_x_spacing, pcb_screw_y_spacing, 2, 2) as screw_holes:
                     Circle(pcb_screw_hole_diameter / 2)
-                    self.pcb_screw_locations = screw_holes.locations
+                    pcb_screw_locations = screw_holes.locations
             extrude(dir=(0, 0, 1), until=Until.LAST, mode=Mode.SUBTRACT)
 
-        return plate.part
+        return pcb_screw_locations, plate.part
 
     def spacer(self):
         # PCB spacers/standoffs
