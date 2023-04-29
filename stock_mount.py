@@ -14,15 +14,6 @@ pcb_screw_x_spacing = 94.8
 pcb_screw_y_spacing = 53
 pcb_screw_hole_diam = 2.8
 
-lcd_height = 55.5
-lcd_width = 84.6
-lcd_thickness = 3.8
-
-# Measurements for the plate itself
-plate_height = 59
-plate_thickness = 3
-plate_corner_radius = 3
-
 # Measurements for cutouts in the plate
 centre_cutout_width = 77.75
 centre_cutout_height = 34.8
@@ -50,16 +41,19 @@ class TouchscreenMount(Compound):
             math.radians(self.printer_mount_angle)
         ) * 7.2 / 2
 
+        # Measurements for the plate itself
         padding = 25
-        self.overall_width = self.printer_screw_x_spacing + padding / 2
-        self.overall_height = self.printer_screw_y_spacing + padding
+        self.plate_width = self.printer_screw_x_spacing + padding / 2
+        self.plate_height = self.printer_screw_y_spacing + padding
+        self.plate_thickness = 3
+        self.plate_corner_radius = 3
 
         self.plate_part = self.plate(
             pcb_screw_x_spacing,
             pcb_screw_y_spacing,
         )
         self.spacer_part: Part = self.spacer()
-        self.pcb_part: Part = self.pcb()
+        self.pcb_part: Compound = self.pcb()
 
         spacers: list[Part] = []
         for idx, plate_spacer_joint in enumerate(self.plate_part.joints.values()):
@@ -88,7 +82,7 @@ class TouchscreenMount(Compound):
         with BuildPart() as plate:
             # Base shape of mounting plate
             with BuildSketch() as base_sk:
-                Rectangle(self.overall_width, self.overall_height)
+                Rectangle(self.plate_width, self.plate_height)
 
                 # Edge cutouts
                 with Locations(base_sk.edges().group_by(Axis.X)[-1][0] @ 0.5):
@@ -100,7 +94,7 @@ class TouchscreenMount(Compound):
                     )
                     mirror(edge_cutout.faces(), about=Plane.YZ, mode=Mode.SUBTRACT)
 
-                fillet(base_sk.vertices(), radius=plate_corner_radius)
+                fillet(base_sk.vertices(), radius=self.plate_corner_radius)
 
                 # Centre cutout
                 RectangleRounded(
@@ -109,7 +103,7 @@ class TouchscreenMount(Compound):
                     centre_cutout_corner_radius,
                     mode=Mode.SUBTRACT,
                 )
-            extrude(amount=plate_thickness)
+            extrude(amount=self.plate_thickness)
 
             top_face = plate.part.faces().sort_by(Axis.Z).last
             bottom_face = plate.part.faces().sort_by(Axis.Z).first
@@ -151,11 +145,12 @@ class TouchscreenMount(Compound):
                     pcb_screw_locations = screw_holes.locations
             extrude(dir=(0, 0, 1), until=Until.LAST, mode=Mode.SUBTRACT)
 
+            # Create joints for connecting to spacers
             for idx, loc in enumerate(pcb_screw_locations):
                 RigidJoint(f"spacer{idx}", plate.part, loc)
 
         plate.part.label = "Plate"
-        plate.part.color = "black"
+        plate.part.color = "indigo"
 
         return plate.part
 
@@ -171,6 +166,7 @@ class TouchscreenMount(Compound):
                 Circle(radius=inner_diam / 2, mode=Mode.SUBTRACT)
             extrude(amount=height)
 
+        # Create joints for connecting to plate and PCB
         RigidJoint("plate", spacer.part)
         RigidJoint("pcb", spacer.part, Location((0, 0, height)))
 
@@ -179,7 +175,7 @@ class TouchscreenMount(Compound):
 
         return spacer.part
     
-    def pcb(self) -> Part:
+    def pcb(self) -> Compound:
         pcb_width = 107.6
         pcb_height = 60
         pcb_thickness = 1.6
@@ -193,18 +189,46 @@ class TouchscreenMount(Compound):
 
             # PCB screw holes
             with BuildSketch(bottom_face) as pcb_screw_holes_sk:
-                with GridLocations(pcb_screw_x_spacing, pcb_screw_y_spacing, 2, 2) as screw_holes:
-                    Circle(pcb_screw_hole_diam / 2)
+                with Locations((-0.4, 0)):
+                    with GridLocations(pcb_screw_x_spacing, pcb_screw_y_spacing, 2, 2) as screw_holes:
+                        Circle(pcb_screw_hole_diam / 2)
+                        spacer_joint_locations = screw_holes.locations
             extrude(dir=(0, 0, 1), until=Until.LAST, mode=Mode.SUBTRACT)
+            
+            # Create joint for connecting to LCD
+            pcb_lcd_joint = RigidJoint("lcd", pcb.part)
 
-            for idx, loc in enumerate(screw_holes.locations):
-                RigidJoint(f"spacer{idx}", pcb.part, loc)
+        with BuildPart() as lcd:
+            with BuildSketch(bottom_face) as lcd_sk:
+                lcd_width = 84.6
+                lcd_height = 55.5
+                lcd_thickness = 3.8
+
+                with Locations((-0.4, 0)):
+                    Rectangle(lcd_width, lcd_height)
+            extrude(amount=lcd_thickness)
+
+            # Create joint for connecting to PCB
+            lcd_pcb_joint = RigidJoint("pcb", lcd.part)
+        
+        pcb_lcd_joint.connect_to(lcd_pcb_joint)
 
         pcb.part.label = "PCB"
         pcb.part.color = "green"
 
-        return pcb.part
+        lcd.part.label = "LCD"
+        lcd.part.color = "black"
 
+        pcb_assembly = Compound(
+            label="PCB Assembly",
+            children=[pcb.part, lcd.part],
+        )
+
+        # Create joints for connecting to spacers
+        for idx, loc in enumerate(spacer_joint_locations):
+            RigidJoint(f"spacer{idx}", pcb_assembly, loc * Pos(0, 0, -pcb_thickness))
+
+        return pcb_assembly
 
 assembly = TouchscreenMount(
     pcb_screw_x_spacing,
