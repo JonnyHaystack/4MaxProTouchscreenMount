@@ -9,7 +9,6 @@ set_port(3939)
 set_defaults(grid=(True, True, True), axes=True, axes0=True)
 
 # %%
-
 pcb_screw_x_spacing = 94.8
 pcb_screw_y_spacing = 53
 pcb_screw_hole_diam = 2.8
