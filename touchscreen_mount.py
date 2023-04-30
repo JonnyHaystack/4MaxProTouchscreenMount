@@ -1,6 +1,7 @@
-import math
-
 import copy
+import math
+from collections.abc import Callable
+
 from build123d import *
 
 
@@ -9,6 +10,7 @@ class TouchscreenMount(Compound):
             self,
             pcb: Compound,
             spacer: Part,
+            make_cutouts: Callable[[BuildSketch]],
             pcb_screw_x_spacing: float,
             pcb_screw_y_spacing: float,
             pcb_screw_hole_diam: float,
@@ -40,21 +42,23 @@ class TouchscreenMount(Compound):
         self.plate_thickness = 3
         self.plate_corner_radius = 3
 
-        plate = self.plate(
+        self.plate = self.make_plate(
+            make_cutouts,
             pcb_screw_x_spacing,
             pcb_screw_y_spacing,
+            pcb_screw_hole_diam,
         )
 
         spacers: list[Part] = []
-        for idx, plate_spacer_joint in enumerate(plate.joints.values()):
-            spacer_copy = copy.copy(self.spacer_part)
+        for idx, plate_spacer_joint in enumerate(self.plate.joints.values()):
+            spacer_copy = copy.copy(self.spacer)
             spacer_copy.label += f" {idx}"
             # Connect screw hole joint to spacer joint, which automatically positions the spacer
             # over the screw hole
             plate_spacer_joint.connect_to(spacer_copy.joints["plate"])
             spacers.append(spacer_copy)
 
-        for idx, pcb_spacer_joint in enumerate(self.pcb_part.joints.values()):
+        for idx, pcb_spacer_joint in enumerate(self.pcb.joints.values()):
             # Connect PCB joint to spacer joint, which automatically positions the PCB connected
             # to the spacers
             spacers[idx].joints["pcb"].connect_to(pcb_spacer_joint)
@@ -62,37 +66,25 @@ class TouchscreenMount(Compound):
         super().__init__(
             label="4Max Pro Touchscreen Mount",
             children=[
-                plate,
+                self.plate,
                 self.pcb,
                 *spacers,
             ],
         )
 
-    def plate(self, pcb_screw_x_spacing, pcb_screw_y_spacing) -> Part:
+    def make_plate(
+            self,
+            make_cutouts: Callable[[BuildSketch]],
+            pcb_screw_x_spacing: float,
+            pcb_screw_y_spacing: float,
+            pcb_screw_hole_diam: float,
+    ) -> Part:
         with BuildPart() as plate:
             # Base shape of mounting plate
             with BuildSketch() as base_sk:
-                Rectangle(self.plate_width, self.plate_height)
+                RectangleRounded(self.plate_width, self.plate_height, self.plate_corner_radius)
+                make_cutouts(base_sk)
 
-                # Edge cutouts
-                with Locations(base_sk.edges().group_by(Axis.X)[-1][0] @ 0.5):
-                    edge_cutout = Rectangle(
-                        edge_cutout_width,
-                        edge_cutout_height,
-                        align=(Align.MAX, Align.CENTER),
-                        mode=Mode.SUBTRACT,
-                    )
-                    mirror(edge_cutout.faces(), about=Plane.YZ, mode=Mode.SUBTRACT)
-
-                fillet(base_sk.vertices(), radius=self.plate_corner_radius)
-
-                # Centre cutout
-                RectangleRounded(
-                    centre_cutout_width,
-                    centre_cutout_height,
-                    centre_cutout_corner_radius,
-                    mode=Mode.SUBTRACT,
-                )
             extrude(amount=self.plate_thickness)
 
             top_face = plate.part.faces().sort_by(Axis.Z).last
