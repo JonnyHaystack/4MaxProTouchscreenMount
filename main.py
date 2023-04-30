@@ -66,9 +66,10 @@ def stock_touchscreen_pcb() -> Compound:
     pcb_width = 107.6
     pcb_height = 60
     pcb_thickness = 1.6
+    pcb_corner_radius = 2
     with BuildPart() as pcb:
         with BuildSketch() as pcb_sk:
-            RectangleRounded(pcb_width, pcb_height, radius=2)
+            RectangleRounded(pcb_width, pcb_height, radius=pcb_corner_radius)
         extrude(amount=pcb_thickness)
         bottom_face = pcb.part.faces().sort_by(Axis.Z).first
         # PCB screw holes
@@ -82,13 +83,13 @@ def stock_touchscreen_pcb() -> Compound:
         # Create joint for connecting to LCD
         pcb_lcd_joint = RigidJoint("lcd", pcb.part)
     with BuildPart() as lcd:
+        lcd_width = 84.6
+        lcd_height = 55.5
+        lcd_thickness = 3.8
         with BuildSketch(bottom_face) as lcd_sk:
-            lcd_width = 84.6
-            lcd_height = 55.5
-            lcd_thickness = 3.8
-            # Edge of LCD is ~0.4mm closer to right edge than left edge, and ~1.6mm closer to bottom
+            # Edge of LCD is ~0.4mm closer to right edge than left edge, and ~1mm closer to bottom
             # edge than top edge
-            with Locations((0.4, -1.6)):
+            with Locations((0.4, -1)):
                 Rectangle(lcd_width, lcd_height)
         extrude(amount=lcd_thickness)
         # Create joint for connecting to PCB
@@ -109,56 +110,74 @@ def stock_touchscreen_pcb() -> Compound:
         RigidJoint(f"spacer{idx}", pcb_assembly, loc * Pos(0, 0, -pcb_thickness))
 
     return pcb_assembly
+
+
+def rpi_cutouts(base_sk: BuildSketch):
+    return
+
+
+def rpi_spacer():
+    # Box(6, 6, )
+    return
 
 
 def rpi_touchscreen_pcb() -> Compound:
     pcb_width = 85.2
-    pcb_height = 60
+    pcb_height = 54.85
     pcb_thickness = 1.6
     with BuildPart() as pcb:
         with BuildSketch() as pcb_sk:
-            RectangleRounded(pcb_width, pcb_height, radius=2)
+            Rectangle(pcb_width, pcb_height)
         extrude(amount=pcb_thickness)
-        bottom_face = pcb.part.faces().sort_by(Axis.Z).first
-        # PCB screw holes
-        with BuildSketch(bottom_face) as pcb_screw_holes_sk:
-            # Screw holes are ~0.4 closer to the left edge than the right edge
-            with Locations((-0.4, 0)):
-                with GridLocations(pcb_screw_x_spacing, pcb_screw_y_spacing, 2, 2) as screw_holes:
-                    Circle(pcb_screw_hole_diam / 2)
-                    spacer_joint_locations = screw_holes.locations
-        extrude(dir=(0, 0, 1), until=Until.LAST, mode=Mode.SUBTRACT)
         # Create joint for connecting to LCD
         pcb_lcd_joint = RigidJoint("lcd", pcb.part)
+
+    pcb_bottom_face = pcb.part.faces().sort_by(Axis.Z).first
+    pcb_top_face = pcb.part.faces().sort_by(Axis.Z).last
+
     with BuildPart() as lcd:
-        with BuildSketch(bottom_face) as lcd_sk:
-            lcd_width = 84.6
-            lcd_height = 55.5
-            lcd_thickness = 3.8
-            # Edge of LCD is ~0.4mm closer to right edge than left edge, and ~1.6mm closer to bottom
-            # edge than top edge
-            with Locations((0.4, -1.6)):
-                Rectangle(lcd_width, lcd_height)
+        lcd_width = 82.5
+        lcd_height = 54.35
+        lcd_thickness = 5 # Not actually this thick but the adhesive makes it sit higher
+        with BuildSketch(pcb_bottom_face) as lcd_sk:
+            Rectangle(lcd_width, lcd_height)
         extrude(amount=lcd_thickness)
         # Create joint for connecting to PCB
         lcd_pcb_joint = RigidJoint("pcb", lcd.part)
+
+    with BuildPart() as connector:
+        connector_length = 33.5
+        connector_width = 4.95
+        connector_height = 13.6
+        connector_distance_to_right = 7
+        connector_distance_to_top = 0.6
+        with BuildSketch(pcb_top_face) as connector_sk:
+            loc = pcb_top_face.edges().sort_by(Axis.X).last @ 1 - (
+                connector_distance_to_right, connector_distance_to_top
+            )
+            with Locations(loc):
+                Rectangle(connector_length, connector_width, align=(Align.MAX, Align.MAX))
+        extrude(amount=connector_height)
+
     pcb_lcd_joint.connect_to(lcd_pcb_joint)
 
     pcb.part.label = "PCB"
     pcb.part.color = "green"
     lcd.part.label = "LCD"
     lcd.part.color = "black"
+    connector.part.label = "Connector"
+    connector.part.color = "black"
 
     pcb_assembly = Compound(
         label="PCB Assembly",
-        children=[pcb.part, lcd.part],
+        children=[pcb.part, lcd.part, connector.part],
     )
     # Create joints for connecting to spacers
-    for idx, loc in enumerate(spacer_joint_locations):
+    corners = pcb.faces().sort_by(Axis.Z).first.vertices()
+    for idx, loc in enumerate(Locations(*corners)):
         RigidJoint(f"spacer{idx}", pcb_assembly, loc * Pos(0, 0, -pcb_thickness))
 
     return pcb_assembly
-
 
 
 stock_mount = TouchscreenMount(
@@ -171,7 +190,8 @@ stock_mount = TouchscreenMount(
 )
 
 show(
-    stock_mount,
+    # stock_mount,
+    rpi_touchscreen_pcb(),
     render_joints=True,
     # transparent=True,
     reset_camera=False,
