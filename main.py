@@ -118,15 +118,15 @@ def rpi_cutouts(base_sk: BuildSketch):
 
 def rpi_spacer():
     # Stock standoff height minus the extra height added to the display by the adhesive
-    pcb_mounting_height = 6.8 - 1.2
+    pcb_mounting_height = 6.8 - 0.6
     side_length = 8.5
     wall_thickness = 1.2
     bottom_thickness = 1.2
     pcb_thickness = 1.6
     lcd_thickness = 3.8
     screw_hole_diam = 3.5
-
     total_height = pcb_mounting_height + pcb_thickness + lcd_thickness
+
     with BuildPart() as spacer:
         with BuildSketch() as spacer_sk:
             Rectangle(side_length, side_length)
