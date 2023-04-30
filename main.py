@@ -5,7 +5,7 @@ from ocp_vscode import show, set_port, set_defaults
 from touchscreen_mount import TouchscreenMount
 
 set_port(3939)
-set_defaults(grid=(True, True, True), axes=True, axes0=True)
+set_defaults(grid=(True, True, True), axes=True, axes0=True, reset_camera=False)
 
 # %%
 pcb_screw_x_spacing = 94.8
@@ -117,8 +117,56 @@ def rpi_cutouts(base_sk: BuildSketch):
 
 
 def rpi_spacer():
-    # Box(6, 6, )
-    return
+    # Stock standoff height minus the extra height added to the display by the adhesive
+    pcb_mounting_height = 6.8 - 1.2
+    side_length = 8.5
+    wall_thickness = 1.2
+    bottom_thickness = 1.2
+    pcb_thickness = 1.6
+    lcd_thickness = 3.8
+    screw_hole_diam = 3.5
+
+    total_height = pcb_mounting_height + pcb_thickness + lcd_thickness
+    with BuildPart() as spacer:
+        with BuildSketch() as spacer_sk:
+            Rectangle(side_length, side_length)
+        extrude(amount=total_height)
+
+        with BuildSketch(spacer.faces().sort_by(Axis.Z).last) as ledge_sk:
+            with Locations((wall_thickness / 2, -wall_thickness / 2)):
+                Rectangle(side_length - wall_thickness, side_length - wall_thickness)
+        ledge = extrude(amount=-(total_height - pcb_mounting_height), mode=Mode.SUBTRACT)
+
+        with BuildSketch(ledge.faces().sort_by(Axis.Z).first) as ledge_sk2:
+            with Locations((wall_thickness / 2, wall_thickness / 2)):
+                Rectangle(side_length - wall_thickness * 2, side_length - wall_thickness * 2)
+        ledge2 = extrude(amount=pcb_mounting_height - bottom_thickness, mode=Mode.SUBTRACT)
+        
+        with BuildSketch(ledge2.faces().sort_by(Axis.Z).first) as screw_hole_sk:
+            Circle(screw_hole_diam / 2)
+        screw_hole = extrude(until=Until.LAST, mode=Mode.SUBTRACT)
+
+        RigidJoint(
+            "plate",
+            spacer.part,
+            Pos(screw_hole.faces().sort_by(Axis.Z).first.center()),
+        )
+        pcb_joint_face: Face = spacer.faces().filter_by(Axis.Z).sort_by(Axis.Z)[2]
+        pcb_joint_vertex: Vertex = pcb_joint_face.vertices().group_by(Axis.X)[0][1]
+        RigidJoint("pcb", spacer.part, Pos(pcb_joint_vertex.center()))
+
+    show(
+        spacer.part,
+        pcb_joint_vertex,
+        # plate_joint,
+        render_joints=True,
+        # screw_hole_face,
+        # spacer_sk2,
+    )
+    
+    spacer.part.export_step("rpi_spacer.step")
+    
+    return spacer.part
 
 
 def rpi_touchscreen_pcb() -> Compound:
@@ -138,7 +186,8 @@ def rpi_touchscreen_pcb() -> Compound:
     with BuildPart() as lcd:
         lcd_width = 82.5
         lcd_height = 54.35
-        lcd_thickness = 5 # Not actually this thick but the adhesive makes it sit higher
+        # The adhesive foam used on this PCB adds about 1.2mm extra height
+        lcd_thickness = 3.8 + 1.2
         with BuildSketch(pcb_bottom_face) as lcd_sk:
             Rectangle(lcd_width, lcd_height)
         extrude(amount=lcd_thickness)
@@ -189,13 +238,15 @@ stock_mount = TouchscreenMount(
     pcb_screw_hole_diam=pcb_screw_hole_diam,
 )
 
-show(
-    # stock_mount,
-    rpi_touchscreen_pcb(),
-    render_joints=True,
-    # transparent=True,
-    reset_camera=False,
-)
+rpi_spacer()
+# show(
+#     # stock_mount,
+#     # rpi_touchscreen_pcb(),
+#     rpi_spacer(),
+#     render_joints=True,
+#     # transparent=True,
+#     reset_camera=False,
+# )
 
 stock_mount.export_step("4Max_Pro_Touchscreen_Mount.step")
 stock_mount.plate.export_stl("4Max_Pro_Touchscreen_Mount_Plate.stl")
