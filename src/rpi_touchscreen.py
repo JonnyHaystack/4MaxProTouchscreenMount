@@ -5,7 +5,13 @@ from ocp_vscode import show, set_port, set_defaults
 from touchscreen_mount import TouchscreenMount
 
 set_port(3939)
-set_defaults(grid=(True, True, True), axes=True, axes0=True, reset_camera=False)
+set_defaults(
+    grid=(True, True, True),
+    axes=True,
+    axes0=True,
+    reset_camera=False,
+    collapse="C",
+)
 
 # %%
 
@@ -33,7 +39,10 @@ Plate cutouts
 '''
 def rpi_cutouts(base_sk: BuildSketch):
     connector_cutout_width = 42
-    connector_cutout_height = 15
+    connector_cutout_height = 10
+    centre_cutout_width = 80
+    centre_cutout_height = 28
+    centre_cutout_corner_radius = 2
     with Locations(base_sk.edges().sort_by(Axis.Y).last @ 0.763):
         connector_cutout = Rectangle(
             connector_cutout_width,
@@ -44,8 +53,13 @@ def rpi_cutouts(base_sk: BuildSketch):
     fillet(connector_cutout.vertices().group_by(Axis.Y)[1], 3)
     fillet(connector_cutout.vertices().group_by(Axis.Y)[0], 1)
     
-    with Locations((0, -5)):
-        centre_cutout = RectangleRounded(80, 30, 2, mode=Mode.SUBTRACT)
+    with Locations((0, -2)):
+        centre_cutout = RectangleRounded(
+            centre_cutout_width,
+            centre_cutout_height,
+            centre_cutout_corner_radius,
+            mode=Mode.SUBTRACT,
+        )
 
 
 '''
@@ -167,18 +181,15 @@ rpi_mount = TouchscreenMount(
     pcb=pcb_assembly,
     spacer=spacer.part,
     make_cutouts=rpi_cutouts,
-    spacer_joint_positions=Pos(-3.2, 0) * spacer_joint_positions,
+    spacer_joint_positions=Pos(-4.6, 0) * spacer_joint_positions,
     spacer_screw_hole_diam=pcb_screw_hole_diam,
     spacer_joint_initial_rot=90,
     spacer_joint_rot_increment=-90,
 )
 
 show(
-    # pcb_assembly,
-    # spacer.part,
     rpi_mount,
     render_joints=True,
-    collapse="C",
     # transparent=True,
 )
 

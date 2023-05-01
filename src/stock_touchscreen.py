@@ -5,7 +5,13 @@ from ocp_vscode import show, set_port, set_defaults
 from touchscreen_mount import TouchscreenMount
 
 set_port(3939)
-set_defaults(grid=(True, True, True), axes=True, axes0=True, reset_camera=False)
+set_defaults(
+    grid=(True, True, True),
+    axes=True,
+    axes0=True,
+    reset_camera=False,
+    collapse="C",
+)
 
 # %%
 pcb_screw_x_spacing = 94.8
@@ -133,8 +139,8 @@ show(
 )
 
 stock_mount.export_step("4Max_Pro_Stock_Touchscreen_Mount.step")
-stock_mount.plate.export_stl("4Max_Pro_Touchscreen_Mount_Plate.stl")
-stock_mount.spacer.export_stl("4Max_Pro_Touchscreen_Mount_Spacer.stl")
+stock_mount.plate.export_stl("4Max_Pro_Stock_Touchscreen_Mount_Plate.stl")
+stock_mount.spacer.export_stl("4Max_Pro_Stock_Touchscreen_Mount_Spacer.stl")
 # stock_mount.plate.export_3mf(
 #     "4Max_Pro_Stock_Touchscreen_Mount_Plate.3mf",
 #     tolerance=1e-3,

@@ -37,9 +37,10 @@ class TouchscreenMount(Compound):
         ) * 7.2 / 2
 
         # Measurements for the plate itself
-        padding = 25
-        self.plate_width = self.printer_screw_x_spacing + padding / 2
-        self.plate_height = self.printer_screw_y_spacing + padding
+        x_padding = 12.5
+        y_padding = 18
+        self.plate_width = self.printer_screw_x_spacing + x_padding
+        self.plate_height = self.printer_screw_y_spacing + y_padding
         self.plate_thickness = 3
         self.plate_corner_radius = 3
 
@@ -123,7 +124,9 @@ class TouchscreenMount(Compound):
                     Circle(self.printer_screw_hole_counterbore_diam / 2)
                 extrude(amount=100, mode=Mode.SUBTRACT)
             # PCB screw holes
-            with BuildSketch(bottom_face) as spacer_screw_holes_sk:
+            screw_holes_sk_plane = Plane(bottom_face)
+            screw_holes_sk_plane.origin = bottom_face.center(CenterOf.BOUNDING_BOX)
+            with BuildSketch(screw_holes_sk_plane) as spacer_screw_holes_sk:
                 with Locations(*spacer_joint_positions) as screw_holes:
                     Circle(spacer_screw_hole_diam / 2)
                     spacer_joint_locations = screw_holes.locations
