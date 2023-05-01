@@ -27,7 +27,7 @@ def stock_cutouts(base_sk: BuildSketch):
         centre_cutout_corner_radius,
         mode=Mode.SUBTRACT,
     )
-    # # Edge cutouts
+    # Edge cutouts
     with Locations(base_sk.edges().group_by(Axis.X)[-1][0] @ 0.5):
         edge_cutout = Rectangle(
             edge_cutout_width,
@@ -116,9 +116,9 @@ stock_mount = TouchscreenMount(
     pcb=stock_touchscreen_pcb(),
     spacer=stock_spacer(),
     make_cutouts=stock_cutouts,
-    pcb_screw_x_spacing=pcb_screw_x_spacing,
-    pcb_screw_y_spacing=pcb_screw_y_spacing,
-    pcb_screw_hole_diam=pcb_screw_hole_diam,
+    spacer_joint_x_spacing=pcb_screw_x_spacing,
+    spacer_joint_y_spacing=pcb_screw_y_spacing,
+    spacer_screw_hole_diam=pcb_screw_hole_diam,
 )
 
 show(
