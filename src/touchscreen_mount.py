@@ -11,8 +11,7 @@ class TouchscreenMount(Compound):
             pcb: Compound,
             spacer: Part,
             make_cutouts: Callable[[BuildSketch]],
-            spacer_joint_x_spacing: float,
-            spacer_joint_y_spacing: float,
+            spacer_joint_positions: list[Location],
             spacer_screw_hole_diam: float,
             spacer_joint_initial_rot: float = 0,
             spacer_joint_rot_increment: float = 0,
@@ -46,8 +45,7 @@ class TouchscreenMount(Compound):
 
         self.plate = self.make_plate(
             make_cutouts,
-            spacer_joint_x_spacing,
-            spacer_joint_y_spacing,
+            spacer_joint_positions,
             spacer_screw_hole_diam,
             spacer_joint_initial_rot,
             spacer_joint_rot_increment,
@@ -79,8 +77,7 @@ class TouchscreenMount(Compound):
     def make_plate(
             self,
             make_cutouts: Callable[[BuildSketch]],
-            spacer_joint_x_spacing: float,
-            spacer_joint_y_spacing: float,
+            spacer_joint_positions: list[Location],
             spacer_screw_hole_diam: float,
             spacer_joint_initial_rot: float = 0,
             spacer_joint_rot_increment: float = 0,
@@ -127,12 +124,7 @@ class TouchscreenMount(Compound):
                 extrude(amount=100, mode=Mode.SUBTRACT)
             # PCB screw holes
             with BuildSketch(bottom_face) as spacer_screw_holes_sk:
-                with GridLocations(
-                    spacer_joint_x_spacing,
-                    spacer_joint_y_spacing,
-                    2,
-                    2,
-                ) as screw_holes:
+                with Locations(*spacer_joint_positions) as screw_holes:
                     Circle(spacer_screw_hole_diam / 2)
                     spacer_joint_locations = screw_holes.locations
             extrude(dir=(0, 0, 1), until=Until.LAST, mode=Mode.SUBTRACT)

@@ -32,7 +32,7 @@ lcd_height = 54.35
 Plate cutouts
 '''
 def rpi_cutouts(base_sk: BuildSketch):
-    with Locations(base_sk.edges().sort_by(Axis.Y).first @ 0.21):
+    with Locations(base_sk.edges().sort_by(Axis.Y).first @ 0.248):
         edge_cutout = Rectangle(
             40,
             15,
@@ -150,12 +150,18 @@ for idx, loc in enumerate(corner_locs):
 '''
 Assemble
 '''
+spacer_joint_positions = GridLocations(
+    pcb_screw_x_spacing,
+    pcb_screw_y_spacing,
+    2,
+    2,
+).locations
+
 rpi_mount = TouchscreenMount(
     pcb=pcb_assembly,
     spacer=spacer.part,
     make_cutouts=rpi_cutouts,
-    spacer_joint_x_spacing=pcb_screw_x_spacing,
-    spacer_joint_y_spacing=pcb_screw_y_spacing,
+    spacer_joint_positions=Pos(4.65, 0) * spacer_joint_positions,
     spacer_screw_hole_diam=pcb_screw_hole_diam,
     spacer_joint_initial_rot=90,
     spacer_joint_rot_increment=-90,
@@ -169,6 +175,6 @@ show(
     # transparent=True,
 )
 
-# rpi_mount.export_step("4Max_Pro_Touchscreen_Mount.step")
-# rpi_mount.plate.export_stl("4Max_Pro_Touchscreen_Mount_Plate.stl")
-# rpi_mount.spacer.export_stl("4Max_Pro_Touchscreen_Mount_Spacer.stl")
+rpi_mount.export_step("4Max_Pro_RPi_Touchscreen_Mount.step")
+rpi_mount.plate.export_stl("4Max_Pro_RPi_Touchscreen_Mount_Plate.stl")
+rpi_mount.spacer.export_stl("4Max_Pro_RPi_Touchscreen_Mount_Spacer.stl")
