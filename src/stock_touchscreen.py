@@ -111,13 +111,18 @@ def stock_touchscreen_pcb() -> Compound:
 
     return pcb_assembly
 
+spacer_joint_positions = GridLocations(
+    pcb_screw_x_spacing,
+    pcb_screw_y_spacing,
+    2,
+    2,
+).locations
 
 stock_mount = TouchscreenMount(
     pcb=stock_touchscreen_pcb(),
     spacer=stock_spacer(),
     make_cutouts=stock_cutouts,
-    spacer_joint_x_spacing=pcb_screw_x_spacing,
-    spacer_joint_y_spacing=pcb_screw_y_spacing,
+    spacer_joint_positions=spacer_joint_positions,
     spacer_screw_hole_diam=pcb_screw_hole_diam,
 )
 
@@ -127,6 +132,18 @@ show(
     # transparent=True,
 )
 
-stock_mount.export_step("4Max_Pro_Touchscreen_Mount.step")
+stock_mount.export_step("4Max_Pro_Stock_Touchscreen_Mount.step")
 stock_mount.plate.export_stl("4Max_Pro_Touchscreen_Mount_Plate.stl")
 stock_mount.spacer.export_stl("4Max_Pro_Touchscreen_Mount_Spacer.stl")
+# stock_mount.plate.export_3mf(
+#     "4Max_Pro_Stock_Touchscreen_Mount_Plate.3mf",
+#     tolerance=1e-3,
+#     angular_tolerance=0.1,
+#     unit=Unit.MILLIMETER,
+# )
+# stock_mount.spacer.export_3mf(
+#     "4Max_Pro_Stock_Touchscreen_Mount_Spacer.3mf",
+#     tolerance=1e-3,
+#     angular_tolerance=0.1,
+#     unit=Unit.MILLIMETER,
+# )

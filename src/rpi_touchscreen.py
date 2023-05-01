@@ -185,3 +185,15 @@ show(
 rpi_mount.export_step("4Max_Pro_RPi_Touchscreen_Mount.step")
 rpi_mount.plate.export_stl("4Max_Pro_RPi_Touchscreen_Mount_Plate.stl")
 rpi_mount.spacer.export_stl("4Max_Pro_RPi_Touchscreen_Mount_Spacer.stl")
+# rpi_mount.plate.export_3mf(
+#     "4Max_Pro_RPi_Touchscreen_Mount_Plate.3mf",
+#     tolerance=1e-3,
+#     angular_tolerance=0.1,
+#     unit=Unit.MILLIMETER,
+# )
+# rpi_mount.spacer.export_3mf(
+#     "4Max_Pro_RPi_Touchscreen_Mount_Spacer.3mf",
+#     tolerance=1e-3,
+#     angular_tolerance=0.1,
+#     unit=Unit.MILLIMETER,
+# )
