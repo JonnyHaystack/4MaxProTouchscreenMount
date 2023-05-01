@@ -32,17 +32,19 @@ lcd_height = 54.35
 Plate cutouts
 '''
 def rpi_cutouts(base_sk: BuildSketch):
-    with Locations(base_sk.edges().sort_by(Axis.Y).first @ 0.248):
-        edge_cutout = Rectangle(
-            40,
-            15,
+    connector_cutout_width = 42
+    connector_cutout_height = 15
+    with Locations(base_sk.edges().sort_by(Axis.Y).last @ 0.763):
+        connector_cutout = Rectangle(
+            connector_cutout_width,
+            connector_cutout_height,
             mode=Mode.SUBTRACT,
-            align=(Align.MIN, Align.MIN),
+            align=(Align.MAX, Align.MAX),
         )
-    fillet(edge_cutout.vertices().group_by(Axis.Y)[0], 3)
-    fillet(edge_cutout.vertices().group_by(Axis.Y)[1], 1)
+    fillet(connector_cutout.vertices().group_by(Axis.Y)[1], 3)
+    fillet(connector_cutout.vertices().group_by(Axis.Y)[0], 1)
     
-    with Locations((0, 5)):
+    with Locations((0, -5)):
         centre_cutout = RectangleRounded(80, 30, 2, mode=Mode.SUBTRACT)
 
 
@@ -119,11 +121,11 @@ with BuildPart() as connector:
     connector_distance_to_right = 7
     connector_distance_to_top = 0.6
     with BuildSketch(pcb_top_face) as connector_sk:
-        loc = pcb_top_face.edges().sort_by(Axis.X).first @ 0 + (
+        loc = pcb_top_face.edges().sort_by(Axis.X).last @ 1 - (
             connector_distance_to_right, connector_distance_to_top
         )
         with Locations(loc):
-            Rectangle(connector_length, connector_width, align=(Align.MIN, Align.MIN))
+            Rectangle(connector_length, connector_width, align=(Align.MAX, Align.MAX))
     extrude(amount=connector_height)
 
 pcb_lcd_joint.connect_to(lcd_pcb_joint)
@@ -145,7 +147,11 @@ for idx, loc in enumerate(corner_locs):
         rotation = (idx - 1) * -90
     else:
         rotation = idx * 90
-    RigidJoint(f"spacer{idx}", pcb_assembly, loc * Pos(0, 0, -pcb_thickness) * Rot(0, 0, 90 + rotation))
+    RigidJoint(
+        f"spacer{idx}",
+        pcb_assembly,
+        loc * Pos(0, 0, -pcb_thickness) * Rot(0, 0, 90 + rotation),
+    )
 
 '''
 Assemble
@@ -161,7 +167,7 @@ rpi_mount = TouchscreenMount(
     pcb=pcb_assembly,
     spacer=spacer.part,
     make_cutouts=rpi_cutouts,
-    spacer_joint_positions=Pos(4.65, 0) * spacer_joint_positions,
+    spacer_joint_positions=Pos(-3.2, 0) * spacer_joint_positions,
     spacer_screw_hole_diam=pcb_screw_hole_diam,
     spacer_joint_initial_rot=90,
     spacer_joint_rot_increment=-90,
@@ -169,6 +175,7 @@ rpi_mount = TouchscreenMount(
 
 show(
     # pcb_assembly,
+    # spacer.part,
     rpi_mount,
     render_joints=True,
     collapse="C",
