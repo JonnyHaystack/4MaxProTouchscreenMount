@@ -124,9 +124,9 @@ class TouchscreenMount(Compound):
                     Circle(self.printer_screw_hole_counterbore_diam / 2)
                 extrude(amount=100, mode=Mode.SUBTRACT)
             # PCB screw holes
-            screw_holes_sk_plane = Plane(bottom_face)
-            screw_holes_sk_plane.origin = bottom_face.center(CenterOf.BOUNDING_BOX)
-            with BuildSketch(screw_holes_sk_plane) as spacer_screw_holes_sk:
+            screw_holes_plane = Plane(bottom_face)
+            screw_holes_plane.origin = bottom_face.center(CenterOf.BOUNDING_BOX)
+            with BuildSketch(screw_holes_plane) as spacer_screw_holes_sk:
                 with Locations(*spacer_joint_positions) as screw_holes:
                     Circle(spacer_screw_hole_diam / 2)
                     spacer_joint_locations = screw_holes.locations

@@ -6,7 +6,6 @@ from touchscreen_mount import TouchscreenMount
 
 set_port(3939)
 set_defaults(
-    grid=(True, True, True),
     axes=True,
     axes0=True,
     reset_camera=False,
