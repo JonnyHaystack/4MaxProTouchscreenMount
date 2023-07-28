@@ -10,7 +10,7 @@ class TouchscreenMount(Compound):
             self,
             pcb: Compound,
             spacer: Part,
-            make_cutouts: Callable[[BuildSketch]],
+            make_cutouts: Callable[[BuildSketch], None],
             spacer_joint_positions: list[Location],
             spacer_screw_hole_diam: float,
             spacer_joint_initial_rot: float = 0,
@@ -77,7 +77,7 @@ class TouchscreenMount(Compound):
 
     def make_plate(
             self,
-            make_cutouts: Callable[[BuildSketch]],
+            make_cutouts: Callable[[BuildSketch], None],
             spacer_joint_positions: list[Location],
             spacer_screw_hole_diam: float,
             spacer_joint_initial_rot: float = 0,

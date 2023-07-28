@@ -1,6 +1,6 @@
 # %%
 from build123d import *
-from ocp_vscode import show, set_port, set_defaults
+from ocp_vscode import show, set_port, set_defaults, Camera, Collapse
 
 from touchscreen_mount import TouchscreenMount
 
@@ -8,8 +8,8 @@ set_port(3939)
 set_defaults(
     axes=True,
     axes0=True,
-    reset_camera=False,
-    collapse="C",
+    collapse=Collapse.ALL,
+    reset_camera=Camera.KEEP,
 )
 
 # %%
@@ -181,7 +181,7 @@ rpi_mount = TouchscreenMount(
     spacer=spacer.part,
     make_cutouts=rpi_cutouts,
     spacer_joint_positions=Pos(-4.6, 0) * spacer_joint_positions,
-    spacer_screw_hole_diam=pcb_screw_hole_diam,
+    spacer_screw_hole_diam=plate_screw_hole_diam,
     spacer_joint_initial_rot=90,
     spacer_joint_rot_increment=-90,
 )

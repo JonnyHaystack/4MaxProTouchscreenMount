@@ -1,6 +1,6 @@
 # %%
 from build123d import *
-from ocp_vscode import show, set_port, set_defaults
+from ocp_vscode import show, set_port, set_defaults, Camera, Collapse
 
 from touchscreen_mount import TouchscreenMount
 
@@ -8,8 +8,8 @@ set_port(3939)
 set_defaults(
     axes=True,
     axes0=True,
-    reset_camera=False,
-    collapse="C",
+    collapse=Collapse.ALL,
+    reset_camera=Camera.KEEP,
 )
 
 # %%
