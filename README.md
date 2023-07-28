@@ -29,15 +29,16 @@ The plate and spacers are separate to enable easy FDM printing without supports.
 ## Installation
 
 1. Prepare the new touchscreen mount by securing the 3D printed spacers to the 3D printed mounting plate using the M2 self-tapping screws, connecting the ribbon cable to the Raspberry Pi touchscreen in the orientation shown below, and placing the touchscreen onto the spacers. It should friction fit and be held securely, but not be bent by excessive pressure. Ignore the chopped off bits of the 3D printed plate - I have improved the design since installing it for myself. You will probably need to clip the plastic on the female end of the ribbon cable to get it to fit around the plate. It's very soft plastic and easy to do this without any negative effects.
-![image](https://github.com/JonnyHaystack/4MaxProTouchscreenMount/assets/1266473/de4e3410-8937-48bd-bc74-35dfc1bfe0ef)
-![image](https://github.com/JonnyHaystack/4MaxProTouchscreenMount/assets/1266473/220738a8-461b-4f7b-940a-cd2a0e64a32f)
+![image](https://github.com/JonnyHaystack/4MaxProTouchscreenMount/assets/1266473/64c408fd-5164-438b-9485-502be962a4cc)
+![image](https://github.com/JonnyHaystack/4MaxProTouchscreenMount/assets/1266473/305b37e2-7e88-4de8-8a63-1e30c46708fd)
 
 2. Remove all panels from the printer. You must remove the bottom panel first, then the rear panel, followed by the side panels, and then the top panel. You should disconnect the cable from the stock touchscreen before removing the top panel. The final panel is the front panel, which you only need to remove if you want to route your wiring through the front, which is what I found to be the cleanest way. Removing the side panels is the most difficult part, because there are multiple plastic latches you need to move out of the way with some kind of prying tool while applying constant outward pressure to the panel so the latches don't slide back into place.
 3. Unfasten the 4 screws that secure the stock touchscreen mounting plate to the top panel. This allows you to remove the stock touchscreen from the printer frame.
 4. Use the screws from the stock touchscreen mount to secure the new touchscreen mount to the frame. Refer to the image in step 1 for orientation.
 5. Route your ribbon cable to your Raspberry Pi somehow. Below are photos of how I achieved this by routing the cable down the side of the front panel. It required cutting off a little bit of the bottom of the front panel to fit the cable through into the underside of the printer's frame.
-![image](https://github.com/JonnyHaystack/4MaxProTouchscreenMount/assets/1266473/69a85b1c-687f-4373-a018-6fdd42ad6d5d)
-![image](https://github.com/JonnyHaystack/4MaxProTouchscreenMount/assets/1266473/a3998c13-aff2-469c-8efb-b87886b68ecc)
+![image](https://github.com/JonnyHaystack/4MaxProTouchscreenMount/assets/1266473/39e64280-282a-40e8-8536-05b6f1371ee1)
+![image](https://github.com/JonnyHaystack/4MaxProTouchscreenMount/assets/1266473/a6bdb8b3-3850-4efe-92e6-6d5b5d0661e4)
+![image](https://github.com/JonnyHaystack/4MaxProTouchscreenMount/assets/1266473/b828bfb1-86f9-4d3b-9af4-5179a1e6037d)
 
 The wiring and the cut parts of the front panel are completely hidden once the bottom panel is secured, so don't worry too much about it looking ugly!
 
@@ -72,4 +73,4 @@ In order for this config to be applied you must restart the Raspberry Pi or at l
 
 Have fun!
 
-![image](https://github.com/JonnyHaystack/4MaxProTouchscreenMount/assets/1266473/036dd368-6a78-4666-9197-a0dc985ccb92)
+![image](https://github.com/JonnyHaystack/4MaxProTouchscreenMount/assets/1266473/ab3a1072-ada0-4a10-ad6b-e0e10d81a929)
